@@ -1,0 +1,59 @@
+version: "3.8"
+
+services:
+  server:
+    build: .
+    container_name: node-server
+    ports:
+      - "5000:5000"
+    depends_on:
+      - mongodb
+    environment:
+      - PORT=5000
+      - MONGO_URI=mongodb://root:root@mongodb:27017/mydb?authSource=admin
+    networks:
+      - app-network
+
+  product-service:
+    build: ./product-service
+    container_name: product-service
+    ports:
+      - "3001:3001"
+    depends_on:
+      - mongodb
+    environment:
+      - PORT=3001
+      - MONGO_URI=mongodb://root:root@mongodb:27017/mydb?authSource=admin
+    networks:
+      - app-network
+
+  user-service:
+    build: ./user-service
+    container_name: user-service
+    ports:
+      - "3002:3002"
+    depends_on:
+      - mongodb
+    environment:
+      - PORT=3002
+      - MONGO_URI=mongodb://root:root@mongodb:27017/mydb?authSource=admin
+    networks:
+      - app-network
+
+  mongodb:
+    image: mongo:6.0
+    container_name: mongodb
+    ports:
+      - "27018:27017"
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=root
+      - MONGO_INITDB_ROOT_PASSWORD=root
+      - MONGO_INITDB_DATABASE=mydb
+    volumes:
+      - ./mongo-data:/data/db
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
