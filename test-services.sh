@@ -44,18 +44,18 @@ curl -s -X POST http://localhost:3001/products \
 
 echo ""
 
-# Get all products
+
 echo "Getting all products..."
 curl -s http://localhost:3001/products | jq '.'
 
 echo ""
 echo ""
 
-# Test Main Server
+
 echo "3. Testing Main Server"
 echo "----------------------"
 
-# Get all users from main server
+
 echo "Getting all users from main server..."
 curl -s http://localhost:5000/users | jq '.'
 

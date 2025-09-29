@@ -1,6 +1,14 @@
 version: "3.8"
 
 services:
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    networks:
+      - app-network
   server:
     build: .
     container_name: node-server
@@ -8,9 +16,16 @@ services:
       - "5000:5000"
     depends_on:
       - mongodb
+      - rabbitmq
     environment:
       - PORT=5000
       - MONGO_URI=mongodb://root:root@mongodb:27017/mydb?authSource=admin
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
+      - SMTP_HOST=smtp.gmail.com
+      - SMTP_PORT=587
+      - SMTP_USER=prakher.0111@gmail.com
+      - SMTP_PASS=dlhs srhz teat czhu
+      - ADMIN_EMAIL=prakher.0111@gmail.com
     networks:
       - app-network
 
@@ -21,9 +36,11 @@ services:
       - "3001:3001"
     depends_on:
       - mongodb
+      - rabbitmq
     environment:
       - PORT=3001
       - MONGO_URI=mongodb://root:root@mongodb:27017/mydb?authSource=admin
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
     networks:
       - app-network
 
@@ -34,9 +51,11 @@ services:
       - "3002:3002"
     depends_on:
       - mongodb
+      - rabbitmq
     environment:
       - PORT=3002
       - MONGO_URI=mongodb://root:root@mongodb:27017/mydb?authSource=admin
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
     networks:
       - app-network
 
@@ -51,6 +70,15 @@ services:
       - MONGO_INITDB_DATABASE=mydb
     volumes:
       - ./mongo-data:/data/db
+    networks:
+      - app-network
+
+  smtp:
+    image: axllent/mailpit:latest
+    container_name: smtp
+    ports:
+      - "8025:8025"    # Mailpit UI
+      - "1025:1025"    # SMTP port
     networks:
       - app-network
 
