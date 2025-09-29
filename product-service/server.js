@@ -55,6 +55,24 @@ function publishOrderPlaced(orderDoc) {
   amqpChan.publish(EXCHANGE, 'order_placed', Buffer.from(JSON.stringify(msg)), { contentType: 'application/json', persistent: true });
   try { console.log('published order_placed', orderDoc._id.toString()); } catch (_) {}
 }
+// very simple auth middleware: expects Authorization: Bearer <base64 userId:role>
+function auth(req, res, next) {
+  const header = req.headers['authorization'] || '';
+  const parts = header.split(' ');
+  if (parts.length !== 2 || parts[0] !== 'Bearer') {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  try {
+    const decoded = Buffer.from(parts[1], 'base64').toString('utf8');
+    const [userId, role] = decoded.split(':');
+    if (!userId || !role) return res.status(401).json({ error: 'Unauthorized' });
+    req.user = { id: userId, role };
+    next();
+  } catch (e) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+}
+
 
 
 app.post('/products', async (req, res) => {
@@ -122,14 +140,16 @@ app.delete('/products/:id', async (req, res) => {
 });
 
 // Place an order
-app.post('/orders', async (req, res) => {
+app.post('/orders', auth, async (req, res) => {
   try {
-    const { productId, quantity = 1, userId } = req.body;
+    const { productId, quantity = 1 } = req.body;
+    const userId = req.user?.id;
+    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
     const product = await Product.findById(productId);
     if (!product) return res.status(404).json({ error: 'Product not found' });
 
     const totalPrice = Number((product.price * quantity).toFixed(2));
-    const order = new Order({ productId, userId: userId || 'anonymous', quantity, totalPrice });
+    const order = new Order({ productId, userId, quantity, totalPrice });
     await order.save();
     try { publishOrderPlaced(order); } catch (e) { console.error('publish error', e.message); }
     res.status(201).json(order);
